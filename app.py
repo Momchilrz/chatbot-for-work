@@ -546,14 +546,14 @@ div.element-container:has(.hm-bar) {
     right: 1.5rem !important;
     left: anchor(left) !important;
     right: anchor(right) !important;
-    bottom: 5.15rem !important;
+    bottom: 7.6rem !important;
     width: auto !important;
     max-width: none !important;
     z-index: 40 !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 0.15rem 1.5rem !important;
-    background: transparent !important;
+    padding: 0.35rem 1.5rem 0.45rem !important;
+    background: var(--hm-canvas) !important;
     border: none !important;
     box-shadow: none !important;
 }
