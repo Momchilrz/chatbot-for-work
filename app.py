@@ -52,7 +52,6 @@ ACCOUNT_COLUMNS = (
 )
 APPOINTMENT_OWNER = "Momchil"
 ACCOUNT_OWNER = "Bulgaria"
-CITATION_ROW_CAP = 20
 CRM_ONLY_REFUSAL = "I can only provide insights based on the loaded CRM data."
 STORE_DIR = Path(__file__).resolve().parent / ".chat_store"
 STORE_STATE_PATH = STORE_DIR / "state.json"
@@ -743,47 +742,6 @@ def crm_tables_text(appointments: pd.DataFrame | None, accounts: pd.DataFrame | 
     return "\n".join(sections)
 
 
-def is_crm_refusal(reply: str) -> bool:
-    text = " ".join((reply or "").split())
-    if CRM_ONLY_REFUSAL not in text:
-        return False
-    return len(text) < 220
-
-
-def citation_records_from_df(df: pd.DataFrame | None) -> list[dict] | None:
-    if df is None or getattr(df, "empty", True):
-        return None
-    subset = df.head(CITATION_ROW_CAP)
-    try:
-        records = json.loads(subset.to_json(orient="records", date_format="iso"))
-    except Exception:
-        records = subset.astype(str).to_dict(orient="records")
-    return records or None
-
-
-def render_citations(message: dict) -> None:
-    if message.get("role") != "assistant":
-        return
-    records = message.get("citations")
-    account_records = message.get("account_citations")
-    if records:
-        try:
-            cite_df = pd.DataFrame(records)
-        except Exception:
-            cite_df = None
-        if cite_df is not None and not cite_df.empty:
-            st.caption("Appointments" if account_records else "Source records")
-            st.dataframe(cite_df, width="stretch", hide_index=True)
-    if account_records:
-        try:
-            account_df = pd.DataFrame(account_records)
-        except Exception:
-            return
-        if not account_df.empty:
-            st.caption("Accounts")
-            st.dataframe(account_df, width="stretch", hide_index=True)
-
-
 def build_user_prompt_with_data(question: str, df: pd.DataFrame) -> str:
     focus = st.session_state.get("focused_account") or RECORD_FOCUS_ALL
     appointments, accounts = tables_for_focus(df, st.session_state.get("active_accounts"), focus)
@@ -946,18 +904,6 @@ def run_chat_turn(prompt: str, df: pd.DataFrame, api_key: str, display: str | No
             st.error(reply)
 
     assistant_message = {"role": "assistant", "content": reply}
-    if (
-        not is_crm_refusal(reply)
-        and not str(reply).startswith("Could not complete that:")
-    ):
-        citations = citation_records_from_df(df)
-        if citations:
-            assistant_message["citations"] = citations
-        focus = st.session_state.get("focused_account") or RECORD_FOCUS_ALL
-        _, cited_accounts = tables_for_focus(df, st.session_state.get("active_accounts"), focus)
-        account_citations = citation_records_from_df(cited_accounts)
-        if account_citations:
-            assistant_message["account_citations"] = account_citations
     st.session_state.messages.append(assistant_message)
     st.session_state.chat_summary = None
     st.session_state.chat_summary_saved = False
@@ -2281,14 +2227,13 @@ if df is not None:
                     key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
                     help="Lists appointment subjects. Regarding is the account for that meeting.",
                 )
-        with st.expander("View data", expanded=False):
-            st.caption("Regarding on an appointment is the Account Name.")
-            st.markdown("**Appointments**")
-            st.dataframe(df, width="stretch", hide_index=True)
-            accounts = st.session_state.get("active_accounts")
-            if accounts is not None and not getattr(accounts, "empty", True):
-                st.markdown("**Accounts**")
-                st.dataframe(accounts, width="stretch", hide_index=True)
+        st.caption("Regarding on an appointment is the Account Name.")
+        st.markdown("**Appointments**")
+        st.dataframe(df, width="stretch", hide_index=True, height=240)
+        accounts = st.session_state.get("active_accounts")
+        if accounts is not None and not getattr(accounts, "empty", True):
+            st.markdown("**Accounts**")
+            st.dataframe(accounts, width="stretch", hide_index=True, height=220)
 
 ai_df = focused_dataframe(df, st.session_state.focused_account) if df is not None else None
 ready = df is not None and is_valid_api_key(API_KEY)
@@ -2314,7 +2259,6 @@ for message in st.session_state.messages:
     avatar = USER_AVATAR if message["role"] == "user" else ASSISTANT_AVATAR
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
-        render_citations(message)
 
 prompt = st.session_state.pending_prompt
 display = st.session_state.pending_display
