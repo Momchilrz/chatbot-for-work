@@ -1368,9 +1368,13 @@ DEMO_HOME_CSS = """
     height: 38px !important;
     min-height: 0 !important;
     max-height: 38px !important;
-    margin: 10px 0 4px !important;
+    margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
+}
+.stApp:has(.crm-home) .st-key-crm_nav [data-testid="stElementContainer"].st-key-crm_open_chat {
+    margin-top: 14px !important;
+    margin-bottom: 0 !important;
 }
 .stApp:has(.crm-home) .st-key-crm_open_chat button {
     width: 100% !important;
