@@ -2015,6 +2015,7 @@ _MIX_PREFIX = re.compile(
     r"^(?:CEM(?:\s*[IVX/A-Z.-]*)?(?:\s+\d+(?:[.,]\d+)?)?|C\s*\d{1,2}\s*/\s*\d{1,2})\s*[-–:—]*\s*",
     re.IGNORECASE,
 )
+_WHEN = re.compile(r"^\d{4}-\d{2}-\d{2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?$")
 
 
 def meeting_subject(value: str) -> str:
@@ -2024,30 +2025,75 @@ def meeting_subject(value: str) -> str:
     return value.strip()
 
 
+def _name_hits(series: pd.Series, names: set[str]) -> int:
+    values = series.astype(str).str.strip().str.casefold()
+    return int(values.isin(names).sum())
+
+
+def _mostly_times(series: pd.Series) -> bool:
+    values = [value.strip() for value in series.astype(str).tolist() if value.strip()]
+    if not values:
+        return False
+    hits = sum(1 for value in values if _WHEN.match(value))
+    return hits / len(values) >= 0.6
+
+
+def align_regarding(appointments: pd.DataFrame, accounts: pd.DataFrame) -> pd.DataFrame:
+    """Put the company name in Regarding when the model swaps it with the start time."""
+    names = {
+        name.casefold()
+        for name in accounts["Account Name"].astype(str).str.strip()
+        if name.strip()
+    }
+    if not names or _name_hits(appointments["Regarding"], names) >= max(1, len(appointments) // 2):
+        return appointments
+    best_column = max(appointments.columns, key=lambda column: _name_hits(appointments[column], names))
+    if _name_hits(appointments[best_column], names) < max(1, len(appointments) // 2):
+        return appointments
+    if best_column == "Regarding":
+        return appointments
+    fixed = appointments.copy()
+    if best_column == "Start" and _mostly_times(fixed["Regarding"]):
+        start = fixed["Start"].copy()
+        fixed["Start"] = fixed["Regarding"]
+        fixed["Regarding"] = start
+        return fixed
+    fixed["Regarding"] = fixed[best_column]
+    return fixed
+
+
 def link_appointments_to_accounts(
     appointments: pd.DataFrame,
     accounts: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    appointments = align_regarding(appointments, accounts)
     appointments = appointments.copy()
     appointments["Subject"] = appointments["Subject"].map(meeting_subject)
     appointments["Owner"] = APPOINTMENT_OWNER
     accounts = accounts.copy()
     accounts["Owner"] = ACCOUNT_OWNER
-    regarding = set(appointments["Regarding"].str.strip())
-    names = set(accounts["Account Name"].str.strip())
-    missing = sorted(name for name in regarding if name and name not in names)
+    canonical = {
+        name.casefold(): name
+        for name in accounts["Account Name"].astype(str).str.strip()
+        if name.strip()
+    }
+    appointments["Regarding"] = appointments["Regarding"].map(
+        lambda value: canonical.get(str(value).strip().casefold(), str(value).strip())
+    )
+    regarding = set(appointments["Regarding"])
+    missing = sorted(name for name in regarding if name and name not in set(canonical.values()))
     if missing:
         raise ValueError(
             "Appointments regard accounts that are not in the Accounts table: "
             + ", ".join(missing)
         )
-    linked = accounts[accounts["Account Name"].str.strip().isin(regarding)].reset_index(drop=True)
+    linked = accounts[accounts["Account Name"].isin(regarding)].reset_index(drop=True)
     if linked.empty:
         raise ValueError("No accounts matched the appointments.")
     return appointments, linked
 
 
-def generate_test_tables(api_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _request_test_tables(api_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     client = openai.OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
     response = client.chat.completions.create(
         model=DEEPSEEK_MODEL,
@@ -2077,6 +2123,7 @@ def generate_test_tables(api_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
                     "- Every account Owner is exactly Bulgaria. That is the country team, not a person.\n"
                     "- 8 appointments and 5 accounts.\n"
                     "- Regarding is the company the meeting is about. It must exactly equal an Account Name.\n"
+                    "- Regarding is never a date or a time. Start and End are the only date columns.\n"
                     "- Every account is the Regarding value of at least one appointment.\n"
                     "- Appointments are site visits, pour reviews, mix-design meetings, or plant walkthroughs for ready-mix concrete.\n"
                     "- Subject is only the meeting name, such as Slab pour review or Plant walkthrough. Do not put a cement or strength class in front of it. Never start Subject with C25/30, C30/37, CEM I, or anything similar.\n"
@@ -2088,7 +2135,7 @@ def generate_test_tables(api_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
                 ),
             },
         ],
-        temperature=0.7,
+        temperature=0.4,
         max_tokens=2200,
     )
     raw = strip_model_fences((response.choices[0].message.content or "").strip())
@@ -2097,6 +2144,16 @@ def generate_test_tables(api_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     appointments = normalize_named_frame(appointments, APPOINTMENT_COLUMNS, "Appointments")
     accounts = normalize_named_frame(accounts, ACCOUNT_COLUMNS, "Accounts")
     return link_appointments_to_accounts(appointments, accounts)
+
+
+def generate_test_tables(api_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    last_error: Exception | None = None
+    for _attempt in range(3):
+        try:
+            return _request_test_tables(api_key)
+        except ValueError as exc:
+            last_error = exc
+    raise last_error if last_error is not None else ValueError("Could not generate test data.")
 
 
 def install_generated_dataframe(appointments: pd.DataFrame, accounts: pd.DataFrame) -> None:
