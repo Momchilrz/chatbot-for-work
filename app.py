@@ -540,37 +540,55 @@ div.element-container:has(.hm-bar) {
 }
 
 .st-key-command_bar {
-    position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    z-index: 25 !important;
+    position: fixed !important;
+    position-anchor: --hm-main;
+    left: 21.5rem !important;
+    right: 1.5rem !important;
+    left: anchor(left) !important;
+    right: anchor(right) !important;
+    bottom: 5.15rem !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 40 !important;
     box-sizing: border-box !important;
-    background: #ffffff !important;
-    border: 1px solid var(--hm-border) !important;
-    border-radius: 4px !important;
-    margin: 0.35rem 0 0.15rem 0 !important;
-    padding: 0.35rem 0.55rem !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    margin: 0 !important;
+    padding: 0.15rem 1.5rem !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
-.stApp:not(:has(.crm-home)) [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] {
-    min-height: calc(100vh - var(--hm-bar-h) - 7rem);
+.stApp:not(:has(.crm-home)) [data-testid="stMain"] {
+    anchor-name: --hm-main;
 }
 
-.stApp:not(:has(.crm-home)) .st-key-command_bar,
-.stApp:not(:has(.crm-home)) [data-testid="stElementContainer"]:has(.st-key-command_bar) {
-    margin-top: auto !important;
+.stApp:not(:has(.crm-home)) [data-testid="stElementContainer"]:has(.st-key-command_bar),
+.stApp:not(:has(.crm-home)) [data-testid="stLayoutWrapper"]:has(.st-key-command_bar) {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+.stApp:not(:has(.crm-home)) .block-container {
+    padding-bottom: 8rem !important;
 }
 
 .st-key-command_bar [data-testid="stSelectbox"] {
-    min-width: 240px;
-    max-width: 320px;
+    min-width: 220px;
+    max-width: 280px;
+    background: #ffffff;
 }
 
-.st-key-command_bar [data-testid="stWidgetLabel"] p {
-    font-size: 0.78rem !important;
-    font-weight: 650 !important;
-    margin-bottom: 0.1rem !important;
+.st-key-focus_record_btn button {
+    max-width: 280px;
+}
+
+.st-key-focus_record_btn button p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .st-key-command_bar .stButton > button,
@@ -1345,18 +1363,27 @@ DEMO_HOME_CSS = """
     color: #0E6242;
     box-shadow: inset 3px 0 0 #0E6242;
 }
-.stApp:has(.crm-home) .st-key-crm_open_chat {
+.stApp:has(.crm-home) .st-key-crm_open_chat,
+.stApp:has(.crm-home) [data-testid="stElementContainer"]:has(.st-key-crm_open_chat) {
+    height: 38px !important;
+    min-height: 0 !important;
+    max-height: 38px !important;
     margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
 }
 .stApp:has(.crm-home) .st-key-crm_open_chat button {
     width: 100% !important;
+    height: 38px !important;
     min-height: 38px !important;
+    max-height: 38px !important;
     padding: 0 10px !important;
     border: 1px solid transparent !important;
     border-radius: 9px !important;
     background: transparent !important;
     color: #24312C !important;
     box-shadow: none !important;
+    outline: none !important;
     font-size: 14.5px !important;
     font-weight: 500 !important;
     font-family: "Segoe UI", "Segoe UI Variable", system-ui, sans-serif !important;
@@ -1365,6 +1392,7 @@ DEMO_HOME_CSS = """
     justify-content: flex-start !important;
     text-align: left !important;
     gap: 10px !important;
+    transform: none !important;
 }
 .stApp:has(.crm-home) .st-key-crm_open_chat button::before {
     content: "";
@@ -1382,12 +1410,18 @@ DEMO_HOME_CSS = """
     justify-content: flex-start !important;
     margin: 0 !important;
 }
-.stApp:has(.crm-home) .st-key-crm_open_chat button:hover:not(:disabled) {
-    background: #E3F2E9 !important;
+.stApp:has(.crm-home) .st-key-crm_open_chat button:hover:not(:disabled),
+.stApp:has(.crm-home) .st-key-crm_open_chat button:focus,
+.stApp:has(.crm-home) .st-key-crm_open_chat button:focus-visible {
+    background: transparent !important;
     border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
     color: #0E6242 !important;
+    font-weight: 700 !important;
 }
-.stApp:has(.crm-home) .st-key-crm_open_chat button:hover:not(:disabled)::before {
+.stApp:has(.crm-home) .st-key-crm_open_chat button:hover:not(:disabled)::before,
+.stApp:has(.crm-home) .st-key-crm_open_chat button:focus::before {
     background: #0E6242;
 }
 </style>
@@ -2274,17 +2308,6 @@ if df is not None:
 
 ai_df = focused_dataframe(df, st.session_state.focused_account) if df is not None else None
 ready = df is not None and is_valid_api_key(API_KEY)
-previous_focus = st.session_state.last_focused_account
-current_focus = st.session_state.focused_account
-if current_focus != previous_focus:
-    st.session_state.last_focused_account = current_focus
-    if ready and current_focus not in {RECORD_FOCUS_ALL, "All Accounts"}:
-        st.session_state.show_next_steps = True
-        st.session_state.next_steps_meeting = current_focus
-        queue_prompt(
-            record_summary_prompt(current_focus),
-            f"Summary: {current_focus}",
-        )
 
 focusing_specific_record = st.session_state.focused_account not in {
     RECORD_FOCUS_ALL,
@@ -2306,15 +2329,45 @@ if prompt:
 if (df is not None and focus_column is not None) or current_session_is_active():
     with st.container(key="command_bar", horizontal=True, vertical_alignment="center", gap="small"):
         if df is not None and focus_column is not None:
-            st.session_state.focused_account = st.selectbox(
-                "Focus record",
-                options=record_options,
-                index=record_options.index(st.session_state.focused_account)
-                if st.session_state.focused_account in record_options
-                else 0,
-                key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
-                help="Lists appointment subjects. Regarding is the account for that meeting.",
+            if "show_focus_picker" not in st.session_state:
+                st.session_state.show_focus_picker = False
+            focused_name = st.session_state.focused_account
+            focus_label = (
+                "Focus record"
+                if focused_name in {RECORD_FOCUS_ALL, "All Accounts"}
+                else focused_name
             )
+            if st.button(
+                focus_label,
+                key="focus_record_btn",
+                icon=":material/filter_list:",
+                type="tertiary",
+            ):
+                st.session_state.show_focus_picker = not st.session_state.show_focus_picker
+                st.rerun()
+            if st.session_state.show_focus_picker:
+                picked = st.selectbox(
+                    "Focus record",
+                    options=record_options,
+                    index=record_options.index(focused_name)
+                    if focused_name in record_options
+                    else 0,
+                    key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
+                    label_visibility="collapsed",
+                    help="Lists appointment subjects. Regarding is the account for that meeting.",
+                )
+                if picked != focused_name:
+                    st.session_state.focused_account = picked
+                    st.session_state.last_focused_account = picked
+                    st.session_state.show_focus_picker = False
+                    if ready and picked not in {RECORD_FOCUS_ALL, "All Accounts"}:
+                        st.session_state.show_next_steps = True
+                        st.session_state.next_steps_meeting = picked
+                        queue_prompt(
+                            record_summary_prompt(picked),
+                            f"Summary: {picked}",
+                        )
+                    st.rerun()
         if current_session_is_active() and df is not None:
             if focusing_specific_record:
                 if st.button(
