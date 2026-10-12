@@ -585,6 +585,18 @@ div.element-container:has(.hm-bar) {
     font-weight: 700 !important;
 }
 
+.st-key-toggle_crm_tables {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.st-key-toggle_crm_tables button {
+    min-height: 30px !important;
+    padding: 0 0.65rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+}
+
 [data-testid="stChatMessage"] {
     background: #ffffff;
     border: 1px solid var(--hm-border);
@@ -2227,13 +2239,29 @@ if df is not None:
                     key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
                     help="Lists appointment subjects. Regarding is the account for that meeting.",
                 )
-        st.caption("Regarding on an appointment is the Account Name.")
-        st.markdown("**Appointments**")
-        st.dataframe(df, width="stretch", hide_index=True, height=240)
-        accounts = st.session_state.get("active_accounts")
-        if accounts is not None and not getattr(accounts, "empty", True):
-            st.markdown("**Accounts**")
-            st.dataframe(accounts, width="stretch", hide_index=True, height=220)
+        if "show_crm_tables" not in st.session_state:
+            st.session_state.show_crm_tables = True
+        tables_open = st.session_state.show_crm_tables
+        label_col, toggle_col = st.columns([4, 1], vertical_alignment="center")
+        with label_col:
+            st.markdown("**Appointments and accounts**")
+        with toggle_col:
+            if st.button(
+                "Hide" if tables_open else "Show",
+                key="toggle_crm_tables",
+                type="tertiary",
+                icon=":material/visibility_off:" if tables_open else ":material/visibility:",
+            ):
+                st.session_state.show_crm_tables = not tables_open
+                st.rerun()
+        if tables_open:
+            st.caption("Regarding on an appointment is the Account Name.")
+            st.markdown("**Appointments**")
+            st.dataframe(df, width="stretch", hide_index=True, height=240)
+            accounts = st.session_state.get("active_accounts")
+            if accounts is not None and not getattr(accounts, "empty", True):
+                st.markdown("**Accounts**")
+                st.dataframe(accounts, width="stretch", hide_index=True, height=220)
 
 ai_df = focused_dataframe(df, st.session_state.focused_account) if df is not None else None
 ready = df is not None and is_valid_api_key(API_KEY)
