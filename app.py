@@ -541,18 +541,36 @@ div.element-container:has(.hm-bar) {
 
 .st-key-command_bar {
     position: static !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
     width: 100% !important;
     max-width: 100% !important;
-    z-index: auto !important;
+    z-index: 25 !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
     border: 1px solid var(--hm-border) !important;
     border-radius: 4px !important;
     margin: 0.35rem 0 0.15rem 0 !important;
-    padding: 0.2rem 0.45rem !important;
+    padding: 0.35rem 0.55rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.stApp:not(:has(.crm-home)) [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] {
+    min-height: calc(100vh - var(--hm-bar-h) - 7rem);
+}
+
+.stApp:not(:has(.crm-home)) .st-key-command_bar,
+.stApp:not(:has(.crm-home)) [data-testid="stElementContainer"]:has(.st-key-command_bar) {
+    margin-top: auto !important;
+}
+
+.st-key-command_bar [data-testid="stSelectbox"] {
+    min-width: 240px;
+    max-width: 320px;
+}
+
+.st-key-command_bar [data-testid="stWidgetLabel"] p {
+    font-size: 0.78rem !important;
+    font-weight: 650 !important;
+    margin-bottom: 0.1rem !important;
 }
 
 .st-key-command_bar .stButton > button,
@@ -2221,6 +2239,7 @@ render_workspace_header(
 if not is_valid_api_key(API_KEY):
     st.warning("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
 
+focus_column = None
 if df is not None:
     with st.container(key="data_tools"):
         record_options = record_focus_options(df)
@@ -2229,16 +2248,6 @@ if df is not None:
             current_focus = RECORD_FOCUS_ALL
             st.session_state.focused_account = RECORD_FOCUS_ALL
         focus_column = find_focus_column(df)
-        if focus_column is not None:
-            focus_col, _rest = st.columns([1.4, 2.2])
-            with focus_col:
-                st.session_state.focused_account = st.selectbox(
-                    "Focus record",
-                    options=record_options,
-                    index=record_options.index(current_focus),
-                    key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
-                    help="Lists appointment subjects. Regarding is the account for that meeting.",
-                )
         if "show_crm_tables" not in st.session_state:
             st.session_state.show_crm_tables = True
         tables_open = st.session_state.show_crm_tables
@@ -2294,9 +2303,19 @@ if prompt:
     st.session_state.pending_prompt = None
     st.session_state.pending_display = None
 
-if current_session_is_active():
+if (df is not None and focus_column is not None) or current_session_is_active():
     with st.container(key="command_bar", horizontal=True, vertical_alignment="center", gap="small"):
-        if df is not None:
+        if df is not None and focus_column is not None:
+            st.session_state.focused_account = st.selectbox(
+                "Focus record",
+                options=record_options,
+                index=record_options.index(st.session_state.focused_account)
+                if st.session_state.focused_account in record_options
+                else 0,
+                key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
+                help="Lists appointment subjects. Regarding is the account for that meeting.",
+            )
+        if current_session_is_active() and df is not None:
             if focusing_specific_record:
                 if st.button(
                     "Next steps",
@@ -2401,7 +2420,12 @@ if current_session_is_active():
                         st.rerun()
                     except Exception as exc:
                         st.error(f"Could not create the meeting prep pack: {exc}")
-        if st.button("Clear chat", key="clear_chat", icon=":material/delete:", type="tertiary"):
+        if current_session_is_active() and st.button(
+            "Clear chat",
+            key="clear_chat",
+            icon=":material/delete:",
+            type="tertiary",
+        ):
             reset_conversation(new_chat=False)
             st.rerun()
 
