@@ -1368,7 +1368,7 @@ DEMO_HOME_CSS = """
     height: 38px !important;
     min-height: 0 !important;
     max-height: 38px !important;
-    margin: 0 !important;
+    margin: 10px 0 4px !important;
     padding: 0 !important;
     overflow: hidden !important;
 }
