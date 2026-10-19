@@ -820,6 +820,50 @@ def next_steps_prompt(record: str | None = None) -> str:
     return NEXT_STEPS_PROMPT
 
 
+SUGGESTED_QUESTIONS = (
+    ("This week", "What is on this week? List the scheduled appointments with company, time, and plant."),
+    ("Canceled", "Which meetings were canceled, and which company and plant does each one regard?"),
+    ("Who to call", "Who should I call next? Use the soonest scheduled appointments and the account contact and phone."),
+)
+
+
+def soonest_scheduled_subject(df: pd.DataFrame | None) -> str | None:
+    if df is None or not {"Start", "Status", "Subject"}.issubset(df.columns):
+        return None
+    status = df["Status"].astype(str).str.strip().str.casefold()
+    scheduled = df.loc[status.eq("scheduled")].copy()
+    if scheduled.empty:
+        return None
+    scheduled["_start"] = pd.to_datetime(scheduled["Start"], errors="coerce")
+    scheduled = scheduled.dropna(subset=["_start"]).sort_values("_start")
+    if scheduled.empty:
+        return None
+    subject = str(scheduled.iloc[0]["Subject"]).strip()
+    return subject or None
+
+
+def next_meeting_prompt(record: str) -> str:
+    return (
+        f'Brief the next scheduled appointment only: "{record}". '
+        "Include the company, contact, phone, city, plant, time, location, and what the meeting is for."
+    )
+
+
+def follow_up_prompt(record: str | None = None) -> str:
+    target = (
+        f'Write it about this appointment only: "{record}". '
+        if record
+        else "Write it about the meeting discussed most recently in this chat. "
+    )
+    return (
+        target
+        + "Draft a short follow-up note the salesperson can send. "
+        "Use only the CRM data and this chat. "
+        "Include who it is to, the company, the meeting, and the next action. "
+        "Plain text, ready to copy."
+    )
+
+
 def api_message_content(message: dict) -> str:
     return message.get("api_content", message["content"])
 
@@ -2373,6 +2417,19 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                             f"Summary: {picked}",
                         )
                     st.rerun()
+        if df is not None and ready:
+            next_subject = soonest_scheduled_subject(df)
+            if st.button(
+                "Next meeting",
+                key="next_meeting",
+                icon=":material/event:",
+                type="tertiary",
+                disabled=next_subject is None,
+            ):
+                queue_prompt(next_meeting_prompt(next_subject), f"Next meeting — {next_subject}")
+            for label, question in SUGGESTED_QUESTIONS:
+                if st.button(label, key=f"suggest_{label}", type="tertiary"):
+                    queue_prompt(question, label)
         if current_session_is_active() and df is not None:
             if focusing_specific_record:
                 if st.button(
@@ -2394,15 +2451,28 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                     st.session_state.show_next_steps = True
                     st.session_state.next_steps_meeting = None
                     queue_prompt(SUMMARY_PROMPT, "Summary for all records")
-                if st.session_state.show_next_steps:
-                    if st.button(
-                        "Next steps",
-                        key="next_steps_all",
-                        icon=":material/checklist:",
-                        type="tertiary",
-                        disabled=not ready,
-                    ):
-                        queue_prompt(next_steps_prompt(), "Next steps")
+                if st.button(
+                    "Next steps",
+                    key="next_steps_all",
+                    icon=":material/checklist:",
+                    type="tertiary",
+                    disabled=not ready,
+                ):
+                    queue_prompt(next_steps_prompt(), "Next steps")
+            follow_record = (
+                st.session_state.focused_account if focusing_specific_record else None
+            )
+            if st.button(
+                "Follow-up note",
+                key="follow_up_note",
+                icon=":material/edit_note:",
+                type="tertiary",
+                disabled=not ready,
+            ):
+                queue_prompt(
+                    follow_up_prompt(follow_record),
+                    "Follow-up note" if follow_record is None else f"Follow-up note — {follow_record}",
+                )
             if st.session_state.get("chat_summary_saved") and st.session_state.chat_summary:
                 st.button(
                     "Chat summary saved",
