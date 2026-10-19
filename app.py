@@ -2191,6 +2191,7 @@ def install_generated_dataframe(appointments: pd.DataFrame, accounts: pd.DataFra
     st.session_state.filename = TEST_DATA_FILENAME
     st.session_state.active_df = appointments
     st.session_state.active_accounts = accounts
+    st.session_state.show_crm_tables = False
     save_active_chat()
 
 
@@ -2287,7 +2288,7 @@ if df is not None:
             st.session_state.focused_account = RECORD_FOCUS_ALL
         focus_column = find_focus_column(df)
         if "show_crm_tables" not in st.session_state:
-            st.session_state.show_crm_tables = True
+            st.session_state.show_crm_tables = False
         tables_open = st.session_state.show_crm_tables
         label_col, toggle_col = st.columns([4, 1], vertical_alignment="center")
         with label_col:
