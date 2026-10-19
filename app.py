@@ -2037,6 +2037,13 @@ def load_chat(chat_id: int) -> None:
     st.session_state.chat_summary_saved = chat.get("chat_summary_saved", False)
     st.session_state.meeting_prep_pack = chat.get("meeting_prep_pack")
     st.session_state.meeting_prep_saved = chat.get("meeting_prep_saved", False)
+    df, accounts, filename, signature = find_shared_dataset()
+    if df is not None:
+        st.session_state.active_df = df
+        st.session_state.active_accounts = accounts
+        st.session_state.filename = filename
+        st.session_state.file_signature = signature
+        copy_dataset_onto_chat(chat, df, accounts, filename, signature)
 
 
 def bring_chat_to_front(chat_id: int) -> None:
@@ -2049,7 +2056,63 @@ def bring_chat_to_front(chat_id: int) -> None:
 
 
 def chat_is_blank(chat: dict) -> bool:
-    return not chat.get("messages") and chat.get("df") is None
+    return not any(
+        message.get("role") == "user" and str(message.get("content", "")).strip()
+        for message in chat.get("messages") or []
+    )
+
+
+def find_shared_dataset() -> tuple[pd.DataFrame | None, pd.DataFrame | None, str | None, tuple | None]:
+    if st.session_state.get("shared_locked"):
+        return (
+            st.session_state.get("shared_df"),
+            st.session_state.get("shared_accounts"),
+            st.session_state.get("shared_filename"),
+            st.session_state.get("shared_signature"),
+        )
+    df = accounts = filename = signature = None
+    for chat in st.session_state.chats:
+        frame = chat.get("df")
+        if frame is not None and not getattr(frame, "empty", True):
+            df = frame
+            accounts = chat.get("accounts_df")
+            filename = chat.get("filename")
+            signature = chat.get("file_signature")
+            break
+    if df is None and st.session_state.get("active_df") is not None:
+        df = st.session_state.active_df
+        accounts = st.session_state.get("active_accounts")
+        filename = st.session_state.get("filename")
+        signature = st.session_state.get("file_signature")
+    st.session_state.shared_locked = True
+    st.session_state.shared_df = df
+    st.session_state.shared_accounts = accounts
+    st.session_state.shared_filename = filename
+    st.session_state.shared_signature = signature
+    return df, accounts, filename, signature
+
+
+def copy_dataset_onto_chat(
+    chat: dict,
+    df: pd.DataFrame | None,
+    accounts: pd.DataFrame | None,
+    filename: str | None,
+    signature: tuple | None,
+) -> None:
+    chat["df"] = df
+    chat["accounts_df"] = accounts
+    chat["filename"] = filename
+    chat["file_signature"] = signature
+
+
+def share_dataset_with_all_chats(
+    df: pd.DataFrame | None,
+    accounts: pd.DataFrame | None,
+    filename: str | None,
+    signature: tuple | None,
+) -> None:
+    for chat in st.session_state.chats:
+        copy_dataset_onto_chat(chat, df, accounts, filename, signature)
 
 
 def chat_has_conversation(chat: dict) -> bool:
@@ -2076,12 +2139,19 @@ def trim_chats_to_limit() -> None:
 
 def start_new_chat() -> None:
     save_active_chat()
+    df, accounts, filename, signature = find_shared_dataset()
     current = get_chat(st.session_state.active_chat_id)
     if current is not None and chat_is_blank(current):
+        if df is not None:
+            copy_dataset_onto_chat(current, df, accounts, filename, signature)
+            load_chat(current["id"])
+            persist_store()
         return
     while len(st.session_state.chats) >= MAX_CHATS:
         discard_chat_record(st.session_state.chats[-1]["id"])
     chat = make_chat()
+    if df is not None:
+        copy_dataset_onto_chat(chat, df, accounts, filename, signature)
     st.session_state.chats.insert(0, chat)
     load_chat(chat["id"])
     persist_store()
@@ -2399,6 +2469,17 @@ def install_generated_dataframe(appointments: pd.DataFrame, accounts: pd.DataFra
     st.session_state.active_df = appointments
     st.session_state.active_accounts = accounts
     st.session_state.show_crm_tables = False
+    st.session_state.shared_locked = True
+    st.session_state.shared_df = appointments
+    st.session_state.shared_accounts = accounts
+    st.session_state.shared_filename = TEST_DATA_FILENAME
+    st.session_state.shared_signature = st.session_state.file_signature
+    share_dataset_with_all_chats(
+        appointments,
+        accounts,
+        TEST_DATA_FILENAME,
+        st.session_state.file_signature,
+    )
     save_active_chat()
 
 
@@ -2417,6 +2498,12 @@ def clear_loaded_data() -> None:
     widget_key = f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce - 1}"
     if widget_key in st.session_state:
         del st.session_state[widget_key]
+    st.session_state.shared_locked = True
+    st.session_state.shared_df = None
+    st.session_state.shared_accounts = None
+    st.session_state.shared_filename = None
+    st.session_state.shared_signature = None
+    share_dataset_with_all_chats(None, None, None, None)
     save_active_chat()
 
 
@@ -2456,7 +2543,7 @@ with st.sidebar:
         key="generate_test_data_side",
         icon=":material/dataset:",
         width="stretch",
-        disabled=not is_valid_api_key(API_KEY),
+        disabled=not is_valid_api_key(API_KEY) or st.session_state.active_df is not None,
     ):
         run_generate_test_data()
     if st.button(
