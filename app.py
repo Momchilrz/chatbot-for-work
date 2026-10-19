@@ -681,31 +681,35 @@ div.element-container:has(.hm-bar) {
 .st-key-command_bar [class*="st-key-utility_"] button,
 .st-key-command_bar [class*="st-key-utility_"] button:hover:not(:disabled),
 .st-key-command_bar [class*="st-key-utility_"] button:disabled {
-    background: transparent !important;
-    border: none !important;
+    background: #e4ebe7 !important;
+    border: 1px solid transparent !important;
     box-shadow: none !important;
     border-radius: 8px !important;
-    height: 30px !important;
-    min-height: 30px !important;
-    padding: 0 0.35rem !important;
-    color: #5c6b64 !important;
-    font-size: 12.5px !important;
-    font-weight: 500 !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 0.75rem !important;
+    color: #1c2823 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
 }
 
 .st-key-command_bar [class*="st-key-utility_"] button:hover:not(:disabled) {
-    background: rgba(14, 98, 66, 0.07) !important;
+    background: #d5e3db !important;
+    border-color: transparent !important;
     color: #0e6242 !important;
 }
 
 .st-key-command_bar .st-key-utility_clear button,
-.st-key-command_bar .st-key-utility_clear button:hover:not(:disabled) {
-    color: #8d5a5a !important;
+.st-key-command_bar .st-key-utility_clear button:hover:not(:disabled),
+.st-key-command_bar .st-key-utility_clear button:disabled {
+    background: #f8e8e8 !important;
+    border-color: transparent !important;
+    color: #8f2d2d !important;
 }
 
 .st-key-command_bar .st-key-utility_clear button:hover:not(:disabled) {
-    background: rgba(164, 38, 44, 0.07) !important;
-    color: #a4262c !important;
+    background: #f3d4d4 !important;
+    color: #7a1f1f !important;
 }
 
 .st-key-data_tools {
