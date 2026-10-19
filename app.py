@@ -655,14 +655,32 @@ div.element-container:has(.hm-bar) {
     background: #ffffff;
 }
 
-.st-key-focus_record_btn button {
+.st-key-focus_record_btn button,
+.st-key-focus_record_active button {
     max-width: 280px;
+    background: #ffffff !important;
+    border: 1px solid #0e6242 !important;
+    color: #0e6242 !important;
 }
 
-.st-key-focus_record_btn button p {
+.st-key-focus_record_btn button p,
+.st-key-focus_record_active button p {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.st-key-focus_record_active button,
+.st-key-focus_record_active button:hover:not(:disabled) {
+    background: #1c2823 !important;
+    border-color: #1c2823 !important;
+    color: #ffffff !important;
+}
+
+.st-key-focus_record_btn button:hover:not(:disabled) {
+    background: #f3faf6 !important;
+    border-color: #0e6242 !important;
+    color: #0e6242 !important;
 }
 
 .st-key-command_bar .stButton > button:hover:not(:disabled),
@@ -2486,15 +2504,12 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                 if "show_focus_picker" not in st.session_state:
                     st.session_state.show_focus_picker = False
                 focused_name = st.session_state.focused_account
-                focus_label = (
-                    "Focus record"
-                    if focused_name in {RECORD_FOCUS_ALL, "All Accounts"}
-                    else focused_name
-                )
+                meeting_focused = focused_name not in {RECORD_FOCUS_ALL, "All Accounts"}
+                focus_label = focused_name if meeting_focused else "All meetings"
                 if st.button(
                     focus_label,
-                    key="focus_record_btn",
-                    icon=":material/filter_list:",
+                    key="focus_record_active" if meeting_focused else "focus_record_btn",
+                    icon=":material/center_focus_strong:" if meeting_focused else ":material/filter_list:",
                     type="tertiary",
                 ):
                     st.session_state.show_focus_picker = not st.session_state.show_focus_picker
@@ -2522,7 +2537,7 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                                 f"Summary: {picked}",
                             )
                         st.rerun()
-            if df is not None and ready:
+            if df is not None and ready and not focusing_specific_record:
                 next_subject = soonest_scheduled_subject(df)
                 if st.button(
                     "Next meeting",
