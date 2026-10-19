@@ -678,6 +678,36 @@ div.element-container:has(.hm-bar) {
     color: #ffffff !important;
 }
 
+.st-key-command_bar [class*="st-key-utility_"] button,
+.st-key-command_bar [class*="st-key-utility_"] button:hover:not(:disabled),
+.st-key-command_bar [class*="st-key-utility_"] button:disabled {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 0.35rem !important;
+    color: #5c6b64 !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+}
+
+.st-key-command_bar [class*="st-key-utility_"] button:hover:not(:disabled) {
+    background: rgba(14, 98, 66, 0.07) !important;
+    color: #0e6242 !important;
+}
+
+.st-key-command_bar .st-key-utility_clear button,
+.st-key-command_bar .st-key-utility_clear button:hover:not(:disabled) {
+    color: #8d5a5a !important;
+}
+
+.st-key-command_bar .st-key-utility_clear button:hover:not(:disabled) {
+    background: rgba(164, 38, 44, 0.07) !important;
+    color: #a4262c !important;
+}
+
 .st-key-data_tools {
     background: #ffffff;
     border: 1px solid var(--hm-border);
@@ -2547,27 +2577,28 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                     )
                 if st.session_state.get("chat_summary_saved") and st.session_state.chat_summary:
                     st.button(
-                        "Chat summary saved",
+                        "Summary saved",
                         disabled=True,
                         icon=":material/check:",
                         type="tertiary",
-                        key="chat_summary_saved_btn",
+                        key="utility_summary_saved",
                     )
                 elif st.session_state.chat_summary:
                     st.download_button(
-                        "Download chat summary",
+                        "Summary",
                         data=st.session_state.chat_summary,
                         file_name="Chat_Summary.txt",
                         mime="text/plain",
                         icon=":material/download:",
                         type="tertiary",
                         on_click=mark_chat_summary_saved,
+                        key="utility_summary_download",
                     )
                 elif st.button(
-                    "Download chat summary",
+                    "Summary",
                     icon=":material/download:",
                     type="tertiary",
-                    key="chat_summary_generate",
+                    key="utility_summary",
                 ):
                     if not is_valid_api_key(API_KEY):
                         st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
@@ -2583,28 +2614,28 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                             st.error(f"Could not summarize the chat: {exc}")
                 if st.session_state.get("meeting_prep_saved") and st.session_state.meeting_prep_pack:
                     st.button(
-                        "Meeting prep saved",
+                        "Prep saved",
                         disabled=True,
                         icon=":material/check:",
                         type="tertiary",
-                        key="meeting_prep_saved_btn",
+                        key="utility_prep_saved",
                     )
                 elif st.session_state.meeting_prep_pack:
                     st.download_button(
-                        "Download meeting prep",
+                        "Meeting prep",
                         data=st.session_state.meeting_prep_pack,
                         file_name="Meeting_Prep_Pack.txt",
                         mime="text/plain",
-                        icon=":material/event_note:",
+                        icon=":material/download:",
                         type="tertiary",
                         on_click=mark_meeting_prep_saved,
-                        key="meeting_prep_download",
+                        key="utility_prep_download",
                     )
                 elif st.button(
-                    "Download meeting prep",
-                    icon=":material/event_note:",
+                    "Meeting prep",
+                    icon=":material/download:",
                     type="tertiary",
-                    key="meeting_prep_generate",
+                    key="utility_prep",
                 ):
                     if not is_valid_api_key(API_KEY):
                         st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
@@ -2621,8 +2652,8 @@ if (df is not None and focus_column is not None) or current_session_is_active():
                         except Exception as exc:
                             st.error(f"Could not create the meeting prep pack: {exc}")
                 if st.button(
-                    "Clear chat",
-                    key="clear_chat",
+                    "Clear",
+                    key="utility_clear",
                     icon=":material/delete:",
                     type="tertiary",
                 ):
