@@ -1741,6 +1741,7 @@ def render_demo_home() -> None:
         st.markdown(nav_top, unsafe_allow_html=True)
         if st.button("Sales chat", key="crm_open_chat", type="tertiary", width="stretch"):
             st.session_state.demo_view = "chat"
+            st.session_state.open_fresh_chat = True
             st.rerun()
         st.markdown(nav_rest, unsafe_allow_html=True)
 
@@ -2395,6 +2396,10 @@ def run_generate_test_data() -> None:
 
 restore_store_if_needed()
 ensure_chats()
+if st.session_state.pop("open_fresh_chat", False):
+    start_new_chat()
+    st.session_state.show_crm_tables = False
+    st.session_state.show_focus_picker = False
 
 with st.sidebar:
     if st.button(
