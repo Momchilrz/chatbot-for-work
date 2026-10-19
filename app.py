@@ -464,6 +464,28 @@ div.element-container:has(.hm-bar) {
     color: var(--hm-green-dark) !important;
 }
 
+[data-testid="stSidebar"] .st-key-clear_loaded_data button {
+    background: #ffffff !important;
+    color: #323130 !important;
+    border: 1px solid #c8c6c4 !important;
+    border-radius: 4px !important;
+    min-height: 36px !important;
+    font-weight: 600 !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+}
+
+[data-testid="stSidebar"] .st-key-clear_loaded_data button > div {
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+[data-testid="stSidebar"] .st-key-clear_loaded_data button:hover:not(:disabled) {
+    background: #fde7e9 !important;
+    border-color: #a4262c !important;
+    color: #a4262c !important;
+}
+
 [data-testid="stSidebar"] [class*="st-key-open_chat_"] button > div {
     justify-content: flex-start !important;
 }
@@ -2380,6 +2402,24 @@ def install_generated_dataframe(appointments: pd.DataFrame, accounts: pd.DataFra
     save_active_chat()
 
 
+def clear_loaded_data() -> None:
+    st.session_state.active_df = None
+    st.session_state.active_accounts = None
+    st.session_state.filename = None
+    st.session_state.file_signature = None
+    st.session_state.focused_account = RECORD_FOCUS_ALL
+    st.session_state.last_focused_account = RECORD_FOCUS_ALL
+    st.session_state.focus_reset_nonce += 1
+    st.session_state.show_crm_tables = False
+    st.session_state.show_focus_picker = False
+    st.session_state.pending_prompt = None
+    st.session_state.pending_display = None
+    widget_key = f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce - 1}"
+    if widget_key in st.session_state:
+        del st.session_state[widget_key]
+    save_active_chat()
+
+
 def run_generate_test_data() -> None:
     if not is_valid_api_key(API_KEY):
         st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
@@ -2419,6 +2459,15 @@ with st.sidebar:
         disabled=not is_valid_api_key(API_KEY),
     ):
         run_generate_test_data()
+    if st.button(
+        "Clear data",
+        key="clear_loaded_data",
+        icon=":material/delete_sweep:",
+        width="stretch",
+        disabled=st.session_state.active_df is None,
+    ):
+        clear_loaded_data()
+        st.rerun()
     visible_chats = [chat for chat in st.session_state.chats if chat_has_conversation(chat)]
     if visible_chats:
         st.markdown('<p class="hm-nav-label">Chats</p>', unsafe_allow_html=True)
