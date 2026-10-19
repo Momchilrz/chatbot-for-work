@@ -552,10 +552,84 @@ div.element-container:has(.hm-bar) {
     z-index: 40 !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 0.35rem 1.5rem 0.45rem !important;
-    background: var(--hm-canvas) !important;
+    padding: 0.55rem 1.25rem 0.45rem !important;
+    background: rgba(243, 242, 241, 0.94) !important;
     border: none !important;
+    border-top: 1px solid var(--hm-border) !important;
     box-shadow: none !important;
+    backdrop-filter: blur(10px);
+}
+
+.st-key-command_bar [data-testid="stVerticalBlock"] {
+    gap: 0.4rem !important;
+}
+
+.st-key-ask_row [data-testid="stHorizontalBlock"],
+.st-key-follow_row [data-testid="stHorizontalBlock"] {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.st-key-ask_row [data-testid="stHorizontalBlock"] > div,
+.st-key-follow_row [data-testid="stHorizontalBlock"] > div,
+.st-key-ask_row [data-testid="stElementContainer"],
+.st-key-follow_row [data-testid="stElementContainer"] {
+    width: auto !important;
+    flex: 0 0 auto !important;
+}
+
+.st-key-command_bar .stButton,
+.st-key-command_bar .stDownloadButton,
+.st-key-command_bar .stButton > button,
+.st-key-command_bar .stDownloadButton > button {
+    width: auto !important;
+}
+
+.st-key-command_bar .stButton > button,
+.st-key-command_bar .stDownloadButton > button {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 0.8rem !important;
+    border-radius: 999px !important;
+    border: 1px solid #d7ded9 !important;
+    background: #ffffff !important;
+    color: #24312c !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+.st-key-command_bar .stButton > button:hover:not(:disabled),
+.st-key-command_bar .stDownloadButton > button:hover {
+    background: #f4f7f5 !important;
+    border-color: #0e6242 !important;
+    color: #0e6242 !important;
+}
+
+.st-key-next_meeting button,
+.st-key-next_meeting button:hover:not(:disabled) {
+    background: #0e6242 !important;
+    border-color: #0e6242 !important;
+    color: #ffffff !important;
+}
+
+.st-key-next_meeting button:hover:not(:disabled) {
+    background: #0c4a34 !important;
+}
+
+.st-key-follow_row {
+    padding-top: 0.15rem;
+}
+
+.st-key-follow_row [class*="st-key-chat_summary"] button,
+.st-key-follow_row [class*="st-key-meeting_prep"] button,
+.st-key-follow_row .st-key-clear_chat button {
+    border-color: transparent !important;
+    background: transparent !important;
+    color: #5e6b64 !important;
+    font-weight: 550 !important;
 }
 
 .stApp:not(:has(.crm-home)) [data-testid="stMain"] {
@@ -572,7 +646,7 @@ div.element-container:has(.hm-bar) {
 }
 
 .stApp:not(:has(.crm-home)) .block-container {
-    padding-bottom: 8rem !important;
+    padding-bottom: 13rem !important;
 }
 
 .st-key-command_bar [data-testid="stSelectbox"] {
@@ -591,21 +665,17 @@ div.element-container:has(.hm-bar) {
     white-space: nowrap;
 }
 
-.st-key-command_bar .stButton > button,
-.st-key-command_bar .stDownloadButton > button {
-    background: transparent !important;
-    border: 1px solid transparent !important;
-    color: #323130 !important;
-    font-weight: 600 !important;
-    border-radius: 2px !important;
-    box-shadow: none !important;
-}
-
 .st-key-command_bar .stButton > button:hover:not(:disabled),
 .st-key-command_bar .stDownloadButton > button:hover {
-    background: #f3f2f1 !important;
-    border-color: transparent !important;
-    color: var(--hm-green) !important;
+    background: #f4f7f5 !important;
+    border-color: #0e6242 !important;
+    color: #0e6242 !important;
+}
+
+.st-key-next_meeting button:hover:not(:disabled) {
+    background: #0c4a34 !important;
+    border-color: #0c4a34 !important;
+    color: #ffffff !important;
 }
 
 .st-key-data_tools {
@@ -2376,186 +2446,188 @@ if prompt:
     st.session_state.pending_display = None
 
 if (df is not None and focus_column is not None) or current_session_is_active():
-    with st.container(key="command_bar", horizontal=True, vertical_alignment="center", gap="small"):
-        if df is not None and focus_column is not None:
-            if "show_focus_picker" not in st.session_state:
-                st.session_state.show_focus_picker = False
-            focused_name = st.session_state.focused_account
-            focus_label = (
-                "Focus record"
-                if focused_name in {RECORD_FOCUS_ALL, "All Accounts"}
-                else focused_name
-            )
-            if st.button(
-                focus_label,
-                key="focus_record_btn",
-                icon=":material/filter_list:",
-                type="tertiary",
-            ):
-                st.session_state.show_focus_picker = not st.session_state.show_focus_picker
-                st.rerun()
-            if st.session_state.show_focus_picker:
-                picked = st.selectbox(
-                    "Focus record",
-                    options=record_options,
-                    index=record_options.index(focused_name)
-                    if focused_name in record_options
-                    else 0,
-                    key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
-                    label_visibility="collapsed",
-                    help="Lists appointment subjects. Regarding is the account for that meeting.",
-                )
-                if picked != focused_name:
-                    st.session_state.focused_account = picked
-                    st.session_state.last_focused_account = picked
+    with st.container(key="command_bar"):
+        with st.container(key="ask_row", horizontal=True, vertical_alignment="center", gap="small"):
+            if df is not None and focus_column is not None:
+                if "show_focus_picker" not in st.session_state:
                     st.session_state.show_focus_picker = False
-                    if ready and picked not in {RECORD_FOCUS_ALL, "All Accounts"}:
-                        st.session_state.show_next_steps = True
-                        st.session_state.next_steps_meeting = picked
-                        queue_prompt(
-                            record_summary_prompt(picked),
-                            f"Summary: {picked}",
-                        )
+                focused_name = st.session_state.focused_account
+                focus_label = (
+                    "Focus record"
+                    if focused_name in {RECORD_FOCUS_ALL, "All Accounts"}
+                    else focused_name
+                )
+                if st.button(
+                    focus_label,
+                    key="focus_record_btn",
+                    icon=":material/filter_list:",
+                    type="tertiary",
+                ):
+                    st.session_state.show_focus_picker = not st.session_state.show_focus_picker
                     st.rerun()
-        if df is not None and ready:
-            next_subject = soonest_scheduled_subject(df)
-            if st.button(
-                "Next meeting",
-                key="next_meeting",
-                icon=":material/event:",
-                type="tertiary",
-                disabled=next_subject is None,
-            ):
-                queue_prompt(next_meeting_prompt(next_subject), f"Next meeting — {next_subject}")
-            for label, question in SUGGESTED_QUESTIONS:
-                if st.button(label, key=f"suggest_{label}", type="tertiary"):
-                    queue_prompt(question, label)
+                if st.session_state.show_focus_picker:
+                    picked = st.selectbox(
+                        "Focus record",
+                        options=record_options,
+                        index=record_options.index(focused_name)
+                        if focused_name in record_options
+                        else 0,
+                        key=f"record_focus_{st.session_state.active_chat_id}_{st.session_state.focus_reset_nonce}",
+                        label_visibility="collapsed",
+                        help="Lists appointment subjects. Regarding is the account for that meeting.",
+                    )
+                    if picked != focused_name:
+                        st.session_state.focused_account = picked
+                        st.session_state.last_focused_account = picked
+                        st.session_state.show_focus_picker = False
+                        if ready and picked not in {RECORD_FOCUS_ALL, "All Accounts"}:
+                            st.session_state.show_next_steps = True
+                            st.session_state.next_steps_meeting = picked
+                            queue_prompt(
+                                record_summary_prompt(picked),
+                                f"Summary: {picked}",
+                            )
+                        st.rerun()
+            if df is not None and ready:
+                next_subject = soonest_scheduled_subject(df)
+                if st.button(
+                    "Next meeting",
+                    key="next_meeting",
+                    icon=":material/event:",
+                    type="tertiary",
+                    disabled=next_subject is None,
+                ):
+                    queue_prompt(next_meeting_prompt(next_subject), f"Next meeting — {next_subject}")
+                for label, question in SUGGESTED_QUESTIONS:
+                    if st.button(label, key=f"suggest_{label}", type="tertiary"):
+                        queue_prompt(question, label)
         if current_session_is_active() and df is not None:
-            if focusing_specific_record:
-                if st.button(
-                    "Next steps",
-                    key="next_steps_record",
-                    icon=":material/checklist:",
-                    type="tertiary",
-                    disabled=not ready,
-                ):
-                    record = st.session_state.focused_account
-                    queue_prompt(next_steps_prompt(record), f"Next steps — {record}")
-            else:
-                if st.button(
-                    "Summary for all records",
-                    icon=":material/summarize:",
-                    type="tertiary",
-                    disabled=not ready,
-                ):
-                    st.session_state.show_next_steps = True
-                    st.session_state.next_steps_meeting = None
-                    queue_prompt(SUMMARY_PROMPT, "Summary for all records")
-                if st.button(
-                    "Next steps",
-                    key="next_steps_all",
-                    icon=":material/checklist:",
-                    type="tertiary",
-                    disabled=not ready,
-                ):
-                    queue_prompt(next_steps_prompt(), "Next steps")
-            follow_record = (
-                st.session_state.focused_account if focusing_specific_record else None
-            )
-            if st.button(
-                "Follow-up note",
-                key="follow_up_note",
-                icon=":material/edit_note:",
-                type="tertiary",
-                disabled=not ready,
-            ):
-                queue_prompt(
-                    follow_up_prompt(follow_record),
-                    "Follow-up note" if follow_record is None else f"Follow-up note — {follow_record}",
+            with st.container(key="follow_row", horizontal=True, vertical_alignment="center", gap="small"):
+                if focusing_specific_record:
+                    if st.button(
+                        "Next steps",
+                        key="next_steps_record",
+                        icon=":material/checklist:",
+                        type="tertiary",
+                        disabled=not ready,
+                    ):
+                        record = st.session_state.focused_account
+                        queue_prompt(next_steps_prompt(record), f"Next steps — {record}")
+                else:
+                    if st.button(
+                        "Summary for all records",
+                        icon=":material/summarize:",
+                        type="tertiary",
+                        disabled=not ready,
+                    ):
+                        st.session_state.show_next_steps = True
+                        st.session_state.next_steps_meeting = None
+                        queue_prompt(SUMMARY_PROMPT, "Summary for all records")
+                    if st.button(
+                        "Next steps",
+                        key="next_steps_all",
+                        icon=":material/checklist:",
+                        type="tertiary",
+                        disabled=not ready,
+                    ):
+                        queue_prompt(next_steps_prompt(), "Next steps")
+                follow_record = (
+                    st.session_state.focused_account if focusing_specific_record else None
                 )
-            if st.session_state.get("chat_summary_saved") and st.session_state.chat_summary:
-                st.button(
-                    "Chat summary saved",
-                    disabled=True,
-                    icon=":material/check:",
+                if st.button(
+                    "Follow-up note",
+                    key="follow_up_note",
+                    icon=":material/edit_note:",
                     type="tertiary",
-                    key="chat_summary_saved_btn",
-                )
-            elif st.session_state.chat_summary:
-                st.download_button(
+                    disabled=not ready,
+                ):
+                    queue_prompt(
+                        follow_up_prompt(follow_record),
+                        "Follow-up note" if follow_record is None else f"Follow-up note — {follow_record}",
+                    )
+                if st.session_state.get("chat_summary_saved") and st.session_state.chat_summary:
+                    st.button(
+                        "Chat summary saved",
+                        disabled=True,
+                        icon=":material/check:",
+                        type="tertiary",
+                        key="chat_summary_saved_btn",
+                    )
+                elif st.session_state.chat_summary:
+                    st.download_button(
+                        "Download chat summary",
+                        data=st.session_state.chat_summary,
+                        file_name="Chat_Summary.txt",
+                        mime="text/plain",
+                        icon=":material/download:",
+                        type="tertiary",
+                        on_click=mark_chat_summary_saved,
+                    )
+                elif st.button(
                     "Download chat summary",
-                    data=st.session_state.chat_summary,
-                    file_name="Chat_Summary.txt",
-                    mime="text/plain",
                     icon=":material/download:",
                     type="tertiary",
-                    on_click=mark_chat_summary_saved,
-                )
-            elif st.button(
-                "Download chat summary",
-                icon=":material/download:",
-                type="tertiary",
-                key="chat_summary_generate",
-            ):
-                if not is_valid_api_key(API_KEY):
-                    st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
-                else:
-                    try:
-                        st.session_state.chat_summary = generate_chat_summary(
-                            API_KEY,
-                            st.session_state.messages,
-                        )
-                        save_active_chat()
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(f"Could not summarize the chat: {exc}")
-            if st.session_state.get("meeting_prep_saved") and st.session_state.meeting_prep_pack:
-                st.button(
-                    "Meeting prep saved",
-                    disabled=True,
-                    icon=":material/check:",
-                    type="tertiary",
-                    key="meeting_prep_saved_btn",
-                )
-            elif st.session_state.meeting_prep_pack:
-                st.download_button(
+                    key="chat_summary_generate",
+                ):
+                    if not is_valid_api_key(API_KEY):
+                        st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
+                    else:
+                        try:
+                            st.session_state.chat_summary = generate_chat_summary(
+                                API_KEY,
+                                st.session_state.messages,
+                            )
+                            save_active_chat()
+                            st.rerun()
+                        except Exception as exc:
+                            st.error(f"Could not summarize the chat: {exc}")
+                if st.session_state.get("meeting_prep_saved") and st.session_state.meeting_prep_pack:
+                    st.button(
+                        "Meeting prep saved",
+                        disabled=True,
+                        icon=":material/check:",
+                        type="tertiary",
+                        key="meeting_prep_saved_btn",
+                    )
+                elif st.session_state.meeting_prep_pack:
+                    st.download_button(
+                        "Download meeting prep",
+                        data=st.session_state.meeting_prep_pack,
+                        file_name="Meeting_Prep_Pack.txt",
+                        mime="text/plain",
+                        icon=":material/event_note:",
+                        type="tertiary",
+                        on_click=mark_meeting_prep_saved,
+                        key="meeting_prep_download",
+                    )
+                elif st.button(
                     "Download meeting prep",
-                    data=st.session_state.meeting_prep_pack,
-                    file_name="Meeting_Prep_Pack.txt",
-                    mime="text/plain",
                     icon=":material/event_note:",
                     type="tertiary",
-                    on_click=mark_meeting_prep_saved,
-                    key="meeting_prep_download",
-                )
-            elif st.button(
-                "Download meeting prep",
-                icon=":material/event_note:",
-                type="tertiary",
-                key="meeting_prep_generate",
-            ):
-                if not is_valid_api_key(API_KEY):
-                    st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
-                else:
-                    try:
-                        prep_df = ai_df if ai_df is not None else df
-                        st.session_state.meeting_prep_pack = generate_meeting_prep_pack(
-                            API_KEY,
-                            st.session_state.messages,
-                            prep_df,
-                        )
-                        save_active_chat()
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(f"Could not create the meeting prep pack: {exc}")
-        if current_session_is_active() and st.button(
-            "Clear chat",
-            key="clear_chat",
-            icon=":material/delete:",
-            type="tertiary",
-        ):
-            reset_conversation(new_chat=False)
-            st.rerun()
+                    key="meeting_prep_generate",
+                ):
+                    if not is_valid_api_key(API_KEY):
+                        st.error("Add DEEPSEEK_API_KEY to your .env file, then restart the app.")
+                    else:
+                        try:
+                            prep_df = ai_df if ai_df is not None else df
+                            st.session_state.meeting_prep_pack = generate_meeting_prep_pack(
+                                API_KEY,
+                                st.session_state.messages,
+                                prep_df,
+                            )
+                            save_active_chat()
+                            st.rerun()
+                        except Exception as exc:
+                            st.error(f"Could not create the meeting prep pack: {exc}")
+                if st.button(
+                    "Clear chat",
+                    key="clear_chat",
+                    icon=":material/delete:",
+                    type="tertiary",
+                ):
+                    reset_conversation(new_chat=False)
+                    st.rerun()
 
 chat_prompt = st.chat_input("Ask about pours, plants, or the next call", disabled=not ready)
 if chat_prompt:
