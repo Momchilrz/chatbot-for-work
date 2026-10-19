@@ -696,6 +696,24 @@ div.element-container:has(.hm-bar) {
     color: #ffffff !important;
 }
 
+.st-key-command_bar .st-key-focus_record_btn button,
+.st-key-command_bar .st-key-focus_record_btn button:hover:not(:disabled) {
+    background: #ffffff !important;
+    border: 1px solid #0e6242 !important;
+    color: #0e6242 !important;
+}
+
+.st-key-command_bar .st-key-focus_record_btn button:hover:not(:disabled) {
+    background: #f3faf6 !important;
+}
+
+.st-key-command_bar .st-key-focus_record_active button,
+.st-key-command_bar .st-key-focus_record_active button:hover:not(:disabled) {
+    background: #1c2823 !important;
+    border-color: #1c2823 !important;
+    color: #ffffff !important;
+}
+
 .st-key-command_bar [class*="st-key-utility_"] button,
 .st-key-command_bar [class*="st-key-utility_"] button:hover:not(:disabled),
 .st-key-command_bar [class*="st-key-utility_"] button:disabled {
